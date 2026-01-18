@@ -1,0 +1,102 @@
+import pygame
+import random
+
+pygame.init()
+
+WIDTH = 400
+HEIGHT = 400
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('<Уклонись от блоков>')
+
+clock = pygame.time.Clock()
+font = pygame.font.SysFont('ofont.ru_Jun.ttf', 32)
+
+MAX_SCORE = 1000  # Максимальное значение счёта
+
+class Player:
+    def __init__(self):
+        self.rect = pygame.Rect(180, 330, 40, 40)
+        self.speed = 6
+
+    def move(self, keys):
+        if keys[pygame.K_LEFT]:
+            self.rect.x -= self.speed
+        if keys[pygame.K_RIGHT]:
+            self.rect.x += self.speed
+
+        self.rect.x = max(0, min(WIDTH - self.rect.width, self.rect.x))
+
+    def draw(self):
+        pygame.draw.rect(screen, (0, 200, 255), self.rect)
+
+class Block:
+    def __init__(self):
+        # Случайный размер блока от 20 до 60 пикселей
+        self.width = random.randint(20, 60)
+        self.height = random.randint(20, 60)
+        self.rect = pygame.Rect(100, 330, self.width, self.height)
+        self.speed = random.randint(3, 6)
+
+    def update(self):
+        self.rect.y += self.speed
+
+        if self.rect.top > HEIGHT:
+            self.rect.y = -30
+            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+            # При появлении нового блока меняем его размер
+            self.width = random.randint(20, 60)
+            self.height = random.randint(20, 60)
+            self.rect.width = self.width
+            self.rect.height = self.height
+
+    def draw(self):
+        pygame.draw.rect(screen, (255, 0, 0), self.rect)
+
+class Game:
+    def __init__(self):
+        self.player = Player()
+        self.blocks = [Block() for i in range(3)]
+        self.running = True
+        self.score = 0
+
+    def events(self):
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                self.running = False
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        self.player.move(keys)
+
+        for block in self.blocks:
+            block.update()
+            if block.rect.colliderect(self.player.rect):
+                self.running = False
+
+        if self.score < MAX_SCORE:
+            self.score += 1
+        else:
+            self.running = False
+            print("Достигнут максимальный счёт!")
+
+    def draw(self):
+        screen.fill((30, 30, 30))
+        self.player.draw()
+        for block in self.blocks:
+            block.draw()
+
+        text = font.render(f'Score: {self.score}/{MAX_SCORE}', True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+        pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            self.events()
+            self.update()
+            self.draw()
+            clock.tick(60)
+
+        screen.fill((30, 30, 30))
+        end_text = font.render(f"Игра окончена! Набрано очков: {self.score}", True, (255, 255, 255))
+        screen.blit(end_text, (50, 150))
+        pygame.display.flip

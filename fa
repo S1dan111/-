@@ -1,0 +1,98 @@
+import pygame
+import random
+import time
+
+pygame.init()
+
+WIDTH = 400
+HEIGHT = 400
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('<Уклонись от блоков>')
+
+clock = pygame.time.Clock()
+font = pygame.font.SysFont('ofont.ru_Jun.ttf', 32)
+
+class Player:
+    def __init__(self):
+        self.rect = pygame.Rect(180, 330, 40, 40)
+        self.speed = 6
+
+    def move(self, keys):
+        if keys[pygame.K_LEFT]:
+            self.rect.x -= self.speed
+        if keys[pygame.K_RIGHT]:
+            self.rect.x += self.speed
+
+        self.rect.x = max(0, min(WIDTH - self.rect.width, self.rect.x))
+
+    def draw(self):
+        pygame.draw.rect(screen, (0, 200, 255), self.rect)
+
+class Block:
+    def __init__(self):
+        self.rect = pygame.Rect(100, 330, 40, 40)
+        self.base_speed = random.randint(3, 6)  # Базовая скорость
+        self.current_speed = self.base_speed    # Текущая скорость
+
+    def update(self, game_time):
+        # Увеличиваем скорость каждые 10 секунд
+        if game_time % 10 == 0:
+            self.current_speed = min(15, self.base_speed + game_time // 10)
+        
+        self.rect.y += self.current_speed
+
+        if self.rect.top > HEIGHT:
+            self.rect.y = -30
+            self.rect.x = random.randrange(0, WIDTH - 30)
+
+    def draw(self):
+        pygame.draw.rect(screen, (255, 0, 0), self.rect)
+
+class Game:
+    def __init__(self):
+        self.player = Player()
+        self.blocks = [Block() for i in range(3)]
+        self.running = True
+        self.score = 0
+        self.start_time = time.time()  # Запоминаем время начала
+
+    def events(self):
+        for e in pygame.event.get():
+            if e.type == pygame.QUIT:
+                self.running = False
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        self.player.move(keys)
+        
+        game_time = int(time.time() - self.start_time)  # Вычисляем прошедшее время
+        
+        for block in self.blocks:
+            block.update(game_time)
+            if block.rect.colliderect(self.player.rect):
+                self.running = False
+
+        self.score += 1
+
+    def draw(self):
+        screen.fill((30, 30, 30))
+        self.player.draw()
+        for block in self.blocks:
+            block.draw()
+
+        text = font.render('Score: %d' % self.score, True, (255, 255, 255))
+        screen.blit(text, (10, 10))
+        pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            self.events()
+            self.update()
+            self.draw()
+            clock.tick(60)
+
+# Запуск игры
+if __name__ == "__main__":
+    game = Game()
+    game.run()
+    pygame.quit()
